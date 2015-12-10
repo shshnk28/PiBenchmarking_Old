@@ -1,7 +1,7 @@
 package mainpkg;
 
 public class GlobalConstants {
-	public static final int numThreads = 4;  // change it to 4 etc
+	public static int numThreads;  // change it to 4 etc
 	public static final double accFactor = 0.01;
 	public static final int thresholdFlushToLog = 1;
 	public static String dataSetType;//

@@ -13,12 +13,12 @@ public class ExecutionPlan {
 	                "insert into outputStream ;";
 		} else if (planType.equals("agg")) {
 			executionPlan = "" +
-	                "define stream inputStream (height int); " +
-	                "" +
-	                "@info(name = 'query1') " +
-	                "from inputStream[height >= 0.0 and height < 300] " +
-	                "select height " +
-	                "insert into NonOutlierStream ;";
+    				"define stream cseEventStream (height int); " +
+                    "" +
+                    "@info(name = 'query1') " +
+                    "from cseEventStream #window.length(5) " + 
+                    "select avg(height) as avgHt " + 
+                    "insert into outputStream ;";
 			// tke the data from this stream and get an average
 		} else if (planType.equals("seq")) {
 			

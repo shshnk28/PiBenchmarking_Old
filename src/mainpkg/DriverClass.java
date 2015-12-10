@@ -37,6 +37,7 @@ public class DriverClass implements iSyntheticEventGen{
 	HashMap<Long, Integer> inputHashMap = null;
 	HashMap<Long, Integer> outputHashMap = null;
 	private static int numThreads= 0;
+	public static String queryType = null;
 	public static Logger Log = LoggerFactory.getLogger(DriverClass.class);
 	public static void main(String[] args) {
 		// initialise the file path here 
@@ -45,8 +46,8 @@ public class DriverClass implements iSyntheticEventGen{
 		Log.info("experiment started");
 //		LOG.error("error string");
 		
-		if (args.length != 1) {
-			System.out.println("Please enter the filname as only parameter.. Returning");
+		if (args.length != 3) {
+			System.out.println("Please enter the filname ,query type, number of threads as parameters.. Returning");
 			return;
 		}
 		pathToFile = args[0];
@@ -55,17 +56,31 @@ public class DriverClass implements iSyntheticEventGen{
 			System.out.println("file does not exist.. Returning");
 			return;
 		}
+		queryType = args[1];
+		if (!(queryType.equals("fil") ||queryType.equals("agg") || queryType.equals("seq"))) {
+			System.out.println("enter fil/agg/seq as second param.. Returning");
+			return;
+		}
+		GlobalConstants.numThreads = Integer.parseInt(args[2]);
+		if (GlobalConstants.numThreads < 1 ||  GlobalConstants.numThreads > 4) {
+			System.out.println("Proj can run only one 1,2,3 or 4 threads.. Returning");
+			return;
+		}
+		
 		
 		DriverClass dc = new DriverClass();
-		dc.initiateExecutionPlan();
-		dc.initiateEventGen();
+		Boolean val =dc.initiateExecutionPlan();
+		if (val == true) {
+			dc.initiateEventGen();
+		}
+		
 	}
-	private void initiateExecutionPlan () {
+	private Boolean initiateExecutionPlan () {
 		SiddhiManager siddhiManager = new SiddhiManager();
-        String executionPlan = ExecutionPlan.returnExecutionPlan("fil");
+        String executionPlan = ExecutionPlan.returnExecutionPlan(queryType);
         if (executionPlan == null) {
         	Log.info("pls enter a valid execution plan(fil/agg/seq) as 2nd cmdline parameter");
-        	return;
+        	return false;
         }
         	
         //Generating runtime
@@ -75,13 +90,12 @@ public class DriverClass implements iSyntheticEventGen{
         executionPlanRuntime.addCallback("query1", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-//                EventPrinter.print(inEvents);
+                EventPrinter.print(inEvents);
             	// write the data in outfile 
 //                long ts = inEvents[0].getTimestamp();
 //                int data = inEvents[0].getData();
                 
                 for (Event eve:inEvents) {
-//                	long time = System.currentTimeMillis()/1000;
                 	Long key = Long.valueOf(System.currentTimeMillis()/1000);
         			if(outputHashMap.containsKey(key)) {
         				Integer tempInt = outputHashMap.get(key);
@@ -91,21 +105,12 @@ public class DriverClass implements iSyntheticEventGen{
         			else {
         				outputHashMap.put(Long.valueOf(System.currentTimeMillis()/1000), Integer.valueOf(1));
         			}
-//                	Object[] data = eve.getData();
-//                	int height = (int)data[0];
-//                	try {
-//                		outFileBuff.write(time+ "," + height);
-//            			outFileBuff.write("\n");
-//                	} catch (IOException ex) {
-//            			System.out.println("could not write filter output to file");
-//            			ex.printStackTrace();
-//            		}
                 }
             }
         });
         inputHandler = executionPlanRuntime.getInputHandler("cseEventStream");
         executionPlanRuntime.start();
-       
+       return true;
 
 	}
 	private void initiateEventGen () {
